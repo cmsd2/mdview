@@ -1,0 +1,23 @@
+{
+  "name": "mdview",
+  "version": "0.1.0",
+  "description": "A lightweight, read-only Markdown viewer with live file-watching",
+  "license": "GPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "vendor": "node scripts/copy-vendor.mjs",
+    "postinstall": "node scripts/copy-vendor.mjs",
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  },
+  "dependencies": {
+    "@highlightjs/cdn-assets": "^11",
+    "github-markdown-css": "^5",
+    "katex": "^0.16"
+  }
+}

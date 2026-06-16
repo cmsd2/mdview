@@ -1,0 +1,47 @@
+[package]
+name = "mdview"
+version = "0.1.0"
+description = "A lightweight, read-only Markdown viewer with live file-watching"
+edition = "2021"
+rust-version = "1.77"
+license = "GPL-3.0-or-later"
+
+[lib]
+# Tauri 2 keeps the app logic in a lib so it can be reused across desktop/mobile.
+name = "mdview_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Command-line argument parsing
+clap = { version = "4", features = ["derive"] }
+
+# Markdown -> HTML (GFM complete) + sanitization
+comrak = "0.29"
+ammonia = "4"
+
+# File watching with debounce
+notify = "6"
+notify-debouncer-full = "0.3"
+
+# Config persistence + per-OS paths
+directories = "5"
+toml = "0.8"
+
+# Asset MIME guessing + URL decoding for the custom protocol
+mime_guess = "2"
+percent-encoding = "2"
+
+[profile.release]
+opt-level = "s"   # optimise for size — keeps the binary small (priority #2)
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

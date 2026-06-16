@@ -1,0 +1,107 @@
+:root {
+  --toolbar-bg: #f6f8fa;
+  --toolbar-fg: #57606a;
+  --toolbar-border: #d0d7de;
+  --btn-active-bg: #ddf4ff;
+  --btn-active-fg: #0969da;
+  --page-bg: #ffffff;
+}
+
+[data-theme="dark"] {
+  --toolbar-bg: #161b22;
+  --toolbar-fg: #8b949e;
+  --toolbar-border: #30363d;
+  --btn-active-bg: #1f6feb33;
+  --btn-active-fg: #58a6ff;
+  --page-bg: #0d1117;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--page-bg);
+}
+
+/* Sticky, unobtrusive toolbar */
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.4rem 0.9rem;
+  background: var(--toolbar-bg);
+  color: var(--toolbar-fg);
+  border-bottom: 1px solid var(--toolbar-border);
+  font:
+    13px/1.4 -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.toolbar .title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-switch {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+
+.theme-switch button {
+  border: 1px solid var(--toolbar-border);
+  background: transparent;
+  color: var(--toolbar-fg);
+  cursor: pointer;
+  width: 28px;
+  height: 24px;
+  font-size: 13px;
+  border-radius: 5px;
+}
+
+.theme-switch button:hover {
+  border-color: var(--btn-active-fg);
+}
+
+.theme-switch button.active {
+  background: var(--btn-active-bg);
+  color: var(--btn-active-fg);
+  border-color: var(--btn-active-fg);
+}
+
+main {
+  display: flex;
+  justify-content: center;
+}
+
+/* github-markdown-css targets .markdown-body; we just constrain width. */
+.markdown-body {
+  width: 100%;
+  max-width: 860px;
+  padding: 2.2rem 2rem 4rem;
+}
+
+.error {
+  margin: 2rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid #d1242f;
+  border-radius: 6px;
+  color: #d1242f;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Task-list checkboxes inherit comrak's markup; keep them tidy. */
+.markdown-body input[type="checkbox"] {
+  margin: 0 0.4em 0.1em 0;
+}
