@@ -12,10 +12,10 @@ use crate::AppState;
 /// Resolve and serve a single asset request. Always returns a `Response`
 /// (404/403 with an empty body on failure) so the protocol never panics.
 pub fn handle(state: &AppState, request: &Request<Vec<u8>>) -> Response<Vec<u8>> {
-    let Some(base_dir) = state.base_dir.as_deref() else {
+    let Some(base_dir) = state.snapshot().base_dir else {
         return not_found(); // no document open -> nothing to serve
     };
-    match resolve(base_dir, request.uri().path()) {
+    match resolve(&base_dir, request.uri().path()) {
         Some(path) => match std::fs::read(&path) {
             Ok(bytes) => {
                 let mime = mime_guess::from_path(&path).first_or_octet_stream();
