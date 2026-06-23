@@ -14,10 +14,12 @@
       (XDG / `Application Support` / `%APPDATA%`); "system" clears the override.
 - [ ] Clean startup/error handling for missing/deleted files (and missing/
       invalid config treated as "no preference," not an error).
+- [ ] In-page find (Ctrl/Cmd-F): highlight all matches, next/prev navigation,
+      match count; survives live reload. Uses the CSS Custom Highlight API.
 
 ## v1.1 — quality of life
 
-- [ ] In-page find (Ctrl/Cmd-F) and a generated table-of-contents sidebar.
+- [ ] A generated table-of-contents sidebar.
 - [ ] Remember window size/position per document.
 - [ ] "Open another file…" without relaunching.
 

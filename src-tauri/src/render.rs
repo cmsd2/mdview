@@ -5,8 +5,9 @@
 //! WebView. Math is left as `<span data-math-style>` markers for KaTeX to
 //! render client-side; code fences keep their `language-*` class for hljs.
 
+use percent_encoding::percent_decode_str;
 use serde::Serialize;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 #[derive(Debug, Serialize)]
@@ -73,6 +74,95 @@ pub fn markdown_to_safe_html(source: &str) -> String {
 
     let dirty = comrak::markdown_to_html(source, &options);
     sanitizer().clean(&dirty).to_string()
+}
+
+/// Absolute, sandboxed filesystem paths for the local assets referenced by the
+/// rendered HTML, for the file-watcher to track. Each relative reference is
+/// resolved lexically against `base_dir` (so a not-yet-created asset still
+/// yields a path) and any that would escape `base_dir` are dropped.
+pub fn local_asset_paths(base_dir: &Path, html: &str) -> Vec<PathBuf> {
+    local_assets(html)
+        .iter()
+        .filter_map(|rel| sandboxed_join(base_dir, rel))
+        .collect()
+}
+
+/// Join a relative asset path onto `base_dir` without requiring it to exist,
+/// resolving `.`/`..` lexically and refusing anything that escapes `base_dir`
+/// (returns `None`) — mirroring the `mdview://` protocol's traversal guard.
+fn sandboxed_join(base_dir: &Path, rel: &str) -> Option<PathBuf> {
+    use std::path::Component;
+    let mut path = base_dir.to_path_buf();
+    let mut depth = 0i32; // components pushed below `base_dir`
+    for comp in Path::new(rel).components() {
+        match comp {
+            Component::Normal(c) => {
+                path.push(c);
+                depth += 1;
+            }
+            Component::CurDir => {}
+            Component::ParentDir => {
+                if depth == 0 {
+                    return None; // would climb above base_dir
+                }
+                path.pop();
+                depth -= 1;
+            }
+            // Absolute paths / drive prefixes aren't relative to base_dir.
+            Component::RootDir | Component::Prefix(_) => return None,
+        }
+    }
+    Some(path)
+}
+
+/// Local (relative) asset references (`src`/`poster`) in the rendered HTML,
+/// decoded to filesystem-style paths. Absolute/scheme/anchor URLs are skipped —
+/// they don't live in the document's directory. Mirrors the frontend's notion
+/// of a "local" URL (see `isAbsolute` in `app.js`).
+pub fn local_assets(html: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    for attr in ["src=\"", "poster=\""] {
+        let mut rest = html;
+        while let Some(i) = rest.find(attr) {
+            rest = &rest[i + attr.len()..];
+            let Some(end) = rest.find('"') else { break };
+            let raw = &rest[..end];
+            rest = &rest[end + 1..];
+            if is_local(raw) {
+                out.push(percent_decode_str(raw).decode_utf8_lossy().into_owned());
+            }
+        }
+    }
+    out.sort();
+    out.dedup();
+    out
+}
+
+/// True for a relative URL that resolves to a file in the document's directory.
+fn is_local(url: &str) -> bool {
+    !(url.is_empty()
+        || url.starts_with("//")
+        || url.starts_with('#')
+        || url.starts_with('/')
+        || has_scheme(url))
+}
+
+/// Does `url` begin with an explicit scheme (`http:`, `data:`, `mdview:`, …)?
+/// Matches the frontend regex `^[a-z][a-z0-9+.-]*:` (case-insensitive).
+fn has_scheme(url: &str) -> bool {
+    let bytes = url.as_bytes();
+    if !bytes.first().is_some_and(|b| b.is_ascii_alphabetic()) {
+        return false;
+    }
+    for &b in &bytes[1..] {
+        if b == b':' {
+            return true;
+        }
+        if !(b.is_ascii_alphanumeric() || b == b'+' || b == b'-' || b == b'.') {
+            return false;
+        }
+    }
+    false
 }
 
 /// First-H1 (`# ...`) text, used for the window title.
@@ -143,6 +233,33 @@ mod tests {
     fn keeps_code_language_class() {
         let html = markdown_to_safe_html("```rust\nfn main() {}\n```\n");
         assert!(html.contains("language-rust"));
+    }
+
+    #[test]
+    fn local_assets_finds_relative_includes_only() {
+        let html = markdown_to_safe_html(
+            "![a](images/a.png)\n\n![b](http://x/y.png)\n\n\
+             <video poster=\"thumb.jpg\" src=\"clip.mp4\"></video>\n\n![c](sub/c%20d.png)",
+        );
+        let assets = local_assets(&html);
+        assert!(assets.contains(&"images/a.png".to_string()));
+        assert!(assets.contains(&"thumb.jpg".to_string()));
+        assert!(assets.contains(&"clip.mp4".to_string()));
+        assert!(assets.contains(&"sub/c d.png".to_string())); // percent-decoded
+        assert!(!assets.iter().any(|a| a.contains("http"))); // absolute skipped
+    }
+
+    #[test]
+    fn asset_paths_resolve_under_base_and_reject_escapes() {
+        let base = Path::new("/docs");
+        let html = markdown_to_safe_html(
+            "![a](img/a.png)\n\n![b](../secret.png)\n\n![c](./b.png)\n\n![d](http://x/y.png)",
+        );
+        let paths = local_asset_paths(base, &html);
+        assert!(paths.contains(&PathBuf::from("/docs/img/a.png")));
+        assert!(paths.contains(&PathBuf::from("/docs/b.png"))); // "./" normalized
+        assert!(!paths.iter().any(|p| p.ends_with("secret.png"))); // escape dropped
+        assert!(!paths.iter().any(|p| p.to_string_lossy().contains("http"))); // absolute skipped
     }
 
     #[test]

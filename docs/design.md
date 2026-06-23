@@ -42,11 +42,29 @@
 - `title` is the first H1 (fallback: filename) — used for the window title.
 
 ### 3. Watcher module (`src/watch.rs`)
-- A `notify` recommended watcher on `document_path` (watch the parent dir to
-  survive editors that replace-on-save rather than write-in-place).
-- Debounced (~150 ms) so a burst of write events yields one update.
-- On a relevant change, emits a Tauri `file-changed` event to the frontend.
-  (The frontend then calls `render` again — keeps a single render path.)
+A path-watching abstraction: `FileWatcher::watch(&[PathBuf])` takes a flat list
+of absolute file paths and emits a `file-changed` event whenever any is
+created, modified, or removed — **without the caller caring whether the files
+or their parent directories exist yet**. Internally:
+- An **OS event watcher** is registered on the individual files that *exist*.
+  Watching a file (not its directory) keeps macOS FSEvents from streaming the
+  surrounding subtree to us, so cost stays low even for a README at a large
+  project root, and in-place edits are instant.
+- A **poll watcher** (debounced, ~1 s) is registered on directories — the
+  nearest existing ancestor of each target. A non-recursive poll is a one-level
+  scan, bounded by a directory's direct children regardless of project size. It
+  catches what file-watches can't: not-yet-existing targets/folders appearing,
+  and replace-on-save on Linux (where an inode-based file watch goes stale).
+- A background **owner thread** owns both watchers and re-reconciles whenever
+  its own events reveal a target or intermediate folder has appeared, so
+  descent into folders that didn't exist yet needs no help from the caller.
+- Both watchers are debounced (~150 ms) so a burst of writes yields one update.
+
+The caller side: after each render, `render::local_asset_paths` resolves the
+relative `src`/`poster` URLs against `base_dir` (lexically, so missing files
+still yield a path; sandboxed like the `mdview://` handler), and the `render`
+command calls `watch` with the document plus those asset paths. The **View >
+Reload** menu item emits `file-changed` directly to force a re-render.
 
 ### 4. Asset protocol handler (`src/assets.rs`)
 - Registers a custom URI scheme `mdview://` whose handler resolves a request

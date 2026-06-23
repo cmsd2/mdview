@@ -8,9 +8,16 @@ const { getCurrentWindow } = window.__TAURI__.window;
 
 let assetBase = "mdview://localhost/";
 let activeChoice = "system";
+// Bumped each render so asset URLs change, forcing the WebView to re-fetch
+// (and thus reflect images that were edited, moved, or deleted) instead of
+// serving stale bytes from its cache.
+let assetVersion = 0;
 
 const content = document.getElementById("content");
 const docTitle = document.getElementById("doc-title");
+const findbar = document.getElementById("findbar");
+const findInput = document.getElementById("find-input");
+const findCount = document.getElementById("find-count");
 
 // ---- Theme -----------------------------------------------------------------
 
@@ -52,7 +59,9 @@ function isAbsolute(url) {
 function toAssetUrl(rel) {
   // Drop a leading "./" and percent-encode, preserving path separators.
   const cleaned = rel.replace(/^\.\//, "");
-  return assetBase + cleaned.split("/").map(encodeURIComponent).join("/");
+  const url = assetBase + cleaned.split("/").map(encodeURIComponent).join("/");
+  // Cache-bust per render (see assetVersion) so reload reflects the file on disk.
+  return url + (url.includes("?") ? "&" : "?") + "v=" + assetVersion;
 }
 
 function rewriteAssets(root) {
@@ -99,9 +108,150 @@ function highlightCode(root) {
   }
 }
 
+// ---- Find (Ctrl/Cmd-F) -----------------------------------------------------
+// Highlights matches with the CSS Custom Highlight API (no DOM mutation, so it
+// composes cleanly with live re-renders). Degrades to count + scroll if the
+// API is unavailable.
+
+const supportsHighlight = typeof CSS !== "undefined" && !!CSS.highlights;
+let findOpen = false;
+let matches = [];
+let current = -1;
+
+function collectMatches(query) {
+  matches = [];
+  if (!query) return;
+  const needle = query.toLowerCase();
+  const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+  let node;
+  while ((node = walker.nextNode())) {
+    const hay = node.nodeValue.toLowerCase();
+    let from = 0;
+    let idx = hay.indexOf(needle, from);
+    while (idx !== -1) {
+      const range = document.createRange();
+      range.setStart(node, idx);
+      range.setEnd(node, idx + needle.length);
+      matches.push(range);
+      from = idx + needle.length;
+      idx = hay.indexOf(needle, from);
+    }
+  }
+}
+
+function paintHighlights() {
+  if (!supportsHighlight) return;
+  const others = matches.filter((_, i) => i !== current);
+  CSS.highlights.set("find-match", new Highlight(...others));
+  const cur = current >= 0 && matches[current] ? [matches[current]] : [];
+  CSS.highlights.set("find-current", new Highlight(...cur));
+}
+
+function clearHighlights() {
+  if (supportsHighlight) {
+    CSS.highlights.delete("find-match");
+    CSS.highlights.delete("find-current");
+  }
+  matches = [];
+  current = -1;
+}
+
+function updateCount() {
+  if (!findInput.value) {
+    findCount.textContent = "0/0";
+    findCount.classList.remove("empty");
+  } else if (matches.length === 0) {
+    findCount.textContent = "0/0";
+    findCount.classList.add("empty");
+  } else {
+    findCount.textContent = `${current + 1}/${matches.length}`;
+    findCount.classList.remove("empty");
+  }
+}
+
+function scrollToCurrent() {
+  const range = matches[current];
+  if (!range) return;
+  const rect = range.getBoundingClientRect();
+  const scroller = document.scrollingElement || document.documentElement;
+  if (rect.width === 0 && rect.height === 0) {
+    range.startContainer.parentElement?.scrollIntoView({ block: "center" });
+    return;
+  }
+  const target = rect.top + scroller.scrollTop - window.innerHeight / 2;
+  scroller.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
+}
+
+function runSearch(resetIndex) {
+  collectMatches(findInput.value);
+  if (matches.length === 0) current = -1;
+  else if (resetIndex || current < 0) current = 0;
+  else current = Math.min(current, matches.length - 1);
+  paintHighlights();
+  updateCount();
+  if (current >= 0) scrollToCurrent();
+}
+
+function step(delta) {
+  if (matches.length === 0) return;
+  current = (current + delta + matches.length) % matches.length;
+  paintHighlights();
+  updateCount();
+  scrollToCurrent();
+}
+
+function openFind() {
+  findbar.hidden = false;
+  findOpen = true;
+  findInput.focus();
+  findInput.select();
+  if (findInput.value) runSearch(false);
+}
+
+function closeFind() {
+  findbar.hidden = true;
+  findOpen = false;
+  clearHighlights();
+  updateCount();
+}
+
+// Re-run the active search after the document is re-rendered (live reload).
+function refreshFind() {
+  if (findOpen && findInput.value) runSearch(false);
+}
+
+function wireFind() {
+  document.getElementById("find-open").addEventListener("click", openFind);
+  document.getElementById("find-close").addEventListener("click", closeFind);
+  document.getElementById("find-next").addEventListener("click", () => step(1));
+  document.getElementById("find-prev").addEventListener("click", () => step(-1));
+
+  findInput.addEventListener("input", () => runSearch(true));
+  findInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      step(e.shiftKey ? -1 : 1);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      closeFind();
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.key === "f" || e.key === "F")) {
+      e.preventDefault();
+      openFind();
+    } else if (e.key === "Escape" && findOpen) {
+      e.preventDefault();
+      closeFind();
+    }
+  });
+}
+
 // ---- Render cycle ----------------------------------------------------------
 
 async function load() {
+  assetVersion++;
   const scroller = document.scrollingElement || document.documentElement;
   const ratio =
     scroller.scrollHeight > scroller.clientHeight
@@ -115,6 +265,7 @@ async function load() {
     renderMath(content);
     highlightCode(content);
     interceptLinks(content);
+    refreshFind();
 
     docTitle.textContent = title;
     document.title = title;
@@ -149,6 +300,8 @@ async function init() {
   for (const btn of document.querySelectorAll("[data-theme-choice]")) {
     btn.addEventListener("click", () => chooseTheme(btn.dataset.themeChoice));
   }
+
+  wireFind();
 
   await load();
   await listen("file-changed", load);

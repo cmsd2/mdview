@@ -7,6 +7,7 @@ A lightweight, read-only **Markdown viewer** with live file-watching.
 - **GitHub-flavoured Markdown** — tables, task lists, footnotes, autolinks, and anchors via [comrak](https://github.com/kivikakk/comrak).
 - **Math** ([KaTeX](https://katex.org/)), **syntax highlighting** ([highlight.js](https://highlightjs.org/)), **embedded images** and common media (video/audio/SVG/PDF).
 - **Live reload** — edits to the file update the view instantly, preserving scroll position.
+- **Find** — `Ctrl`/`Cmd`-`F` highlights all matches with next/prev navigation and a match count.
 - **Light / dark / system** theme, with the choice remembered in a config file.
 
 > No editing. This is a viewer.
@@ -17,6 +18,33 @@ A lightweight, read-only **Markdown viewer** with live file-watching.
 mdview path/to/file.md   # open a file (watched; re-renders on save)
 mdview                   # no file -> welcome screen
 ```
+
+### Running from the terminal on macOS
+
+When you drag `mdview.app` into `/Applications`, its binary lives at
+`/Applications/mdview.app/Contents/MacOS/mdview`, which isn't on your `$PATH`.
+To get a `mdview` command (no `sudo`, no `/usr/local/bin`):
+
+- **From the app:** **mdview ▸ Install 'mdview' Shell Command**. This symlinks
+  the app into `~/.local/bin`. If that directory isn't on your `PATH` yet, add
+  this to your shell profile (e.g. `~/.zshrc`) and open a new terminal:
+
+  ```sh
+  export PATH="$HOME/.local/bin:$PATH"
+  ```
+
+- **By hand**, equivalently:
+
+  ```sh
+  mkdir -p ~/.local/bin
+  ln -sf /Applications/mdview.app/Contents/MacOS/mdview ~/.local/bin/mdview
+  ```
+
+Run the binary directly (as above) rather than `open -a mdview` — `open`
+detaches the process and discards the working directory, so relative paths like
+`mdview ./notes.md` wouldn't resolve. One consequence of running it directly:
+the app shares the terminal session's lifetime (close the terminal and the
+window closes too) unless you background it.
 
 During development you can run it without building a bundle (the frontend is
 static, so no dev server is needed):

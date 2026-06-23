@@ -14,12 +14,23 @@
   <body>
     <header class="toolbar">
       <span class="title" id="doc-title">mdview</span>
-      <div class="theme-switch" role="group" aria-label="Theme">
-        <button type="button" data-theme-choice="light" title="Light theme">☀</button>
-        <button type="button" data-theme-choice="dark" title="Dark theme">☾</button>
-        <button type="button" data-theme-choice="system" title="Follow system">⚙</button>
+      <div class="controls">
+        <button type="button" id="find-open" class="icon-btn" title="Find (⌘F / Ctrl+F)">⌕</button>
+        <div class="theme-switch" role="group" aria-label="Theme">
+          <button type="button" data-theme-choice="light" title="Light theme">☀</button>
+          <button type="button" data-theme-choice="dark" title="Dark theme">☾</button>
+          <button type="button" data-theme-choice="system" title="Follow system">⚙</button>
+        </div>
       </div>
     </header>
+
+    <div id="findbar" class="findbar" hidden>
+      <input id="find-input" type="text" placeholder="Find in document" spellcheck="false" />
+      <span id="find-count" class="find-count">0/0</span>
+      <button type="button" id="find-prev" class="icon-btn" title="Previous (⇧⏎)">↑</button>
+      <button type="button" id="find-next" class="icon-btn" title="Next (⏎)">↓</button>
+      <button type="button" id="find-close" class="icon-btn" title="Close (Esc)">✕</button>
+    </div>
 
     <main>
       <article class="markdown-body" id="content"></article>

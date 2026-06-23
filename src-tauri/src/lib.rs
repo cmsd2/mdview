@@ -47,11 +47,30 @@ impl AppState {
 struct WatcherState(Mutex<Option<watch::FileWatcher>>);
 
 #[tauri::command]
-fn render(state: tauri::State<'_, AppState>) -> Result<render::RenderedDoc, String> {
-    match state.snapshot().doc_path {
-        Some(path) => render::render(&path),
-        None => Ok(render::welcome()),
+fn render(
+    state: tauri::State<'_, AppState>,
+    watcher: tauri::State<'_, WatcherState>,
+) -> Result<render::RenderedDoc, String> {
+    let snap = state.snapshot();
+    let Some(path) = snap.doc_path else {
+        return Ok(render::welcome());
+    };
+
+    let doc = render::render(&path)?;
+
+    // Keep the watcher's target set in sync with what this render references:
+    // the document plus its included images/media. Files the document no longer
+    // references drop off; ones it newly references (even not-yet-created) are
+    // picked up.
+    let mut targets = vec![path];
+    if let Some(base) = snap.base_dir.as_deref() {
+        targets.extend(render::local_asset_paths(base, &doc.html));
     }
+    if let Some(w) = watcher.0.lock().expect("watcher state poisoned").as_ref() {
+        w.watch(&targets);
+    }
+
+    Ok(doc)
 }
 
 #[tauri::command]
@@ -120,7 +139,12 @@ fn open_document(app: &AppHandle, requested: &Path) -> Result<(), String> {
     {
         let watcher_state = app.state::<WatcherState>();
         let mut w = watcher_state.0.lock().expect("watcher state poisoned");
-        *w = Some(new_watcher);
+        // Swap the new watcher in, then drop the old one *after* releasing the
+        // lock — dropping it joins its owner thread, which would otherwise block
+        // any concurrent `render` waiting on this same lock.
+        let old = w.replace(new_watcher);
+        drop(w);
+        drop(old);
     }
 
     if let Some(win) = app.get_webview_window("main") {
@@ -134,6 +158,59 @@ fn open_document(app: &AppHandle, requested: &Path) -> Result<(), String> {
 
     let _ = app.emit("file-changed", ());
     Ok(())
+}
+
+/// Install a `mdview` symlink into `~/.local/bin` pointing at the running
+/// binary, then report the outcome in a dialog. macOS-only: when the app is
+/// dragged into `/Applications` its executable isn't on `$PATH`, so this gives
+/// terminal users a `mdview` command without needing `sudo` or `/usr/local/bin`.
+#[cfg(target_os = "macos")]
+fn install_cli(app: &AppHandle) {
+    use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
+
+    let (title, body, kind) = match link_cli() {
+        Ok(link) => (
+            "Command installed",
+            format!(
+                "Installed the `mdview` command at:\n{}\n\nIf your terminal can't \
+                 find it, add this line to your shell profile (e.g. ~/.zshrc) and \
+                 open a new terminal:\n\n    export PATH=\"$HOME/.local/bin:$PATH\"",
+                link.display()
+            ),
+            MessageDialogKind::Info,
+        ),
+        Err(e) => ("Could not install command", e, MessageDialogKind::Error),
+    };
+    app.dialog().message(body).title(title).kind(kind).show(|_| {});
+}
+
+/// Create (or refresh) the `~/.local/bin/mdview` symlink to this executable.
+/// Returns the link path on success.
+#[cfg(target_os = "macos")]
+fn link_cli() -> Result<PathBuf, String> {
+    let exe = std::env::current_exe().map_err(|e| format!("cannot locate the app binary: {e}"))?;
+    let home = std::env::var_os("HOME").ok_or("HOME is not set")?;
+    let dir = PathBuf::from(home).join(".local/bin");
+    std::fs::create_dir_all(&dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
+    let link = dir.join("mdview");
+
+    // Replace a symlink left by a previous install (or a dead link), but never
+    // clobber a real file the user put there themselves.
+    match std::fs::symlink_metadata(&link) {
+        Ok(meta) if meta.file_type().is_symlink() => std::fs::remove_file(&link)
+            .map_err(|e| format!("cannot replace {}: {e}", link.display()))?,
+        Ok(_) => {
+            return Err(format!(
+                "{} already exists and isn't a symlink — remove it first.",
+                link.display()
+            ))
+        }
+        Err(_) => {} // nothing there yet
+    }
+
+    std::os::unix::fs::symlink(&exe, &link)
+        .map_err(|e| format!("cannot create symlink {}: {e}", link.display()))?;
+    Ok(link)
 }
 
 /// Show the native open-file dialog and load whatever the user picks.
@@ -160,13 +237,20 @@ fn install_menu(app: &AppHandle) -> tauri::Result<()> {
     let open = MenuItemBuilder::with_id("open", "Open…")
         .accelerator("CmdOrCtrl+O")
         .build(app)?;
+    let reload = MenuItemBuilder::with_id("reload", "Reload")
+        .accelerator("CmdOrCtrl+R")
+        .build(app)?;
 
     let mut menu_builder = MenuBuilder::new(app);
 
     #[cfg(target_os = "macos")]
     {
+        let install_cli = MenuItemBuilder::with_id("install-cli", "Install 'mdview' Shell Command")
+            .build(app)?;
         let app_submenu = SubmenuBuilder::new(app, "mdview")
             .about(Some(AboutMetadata::default()))
+            .separator()
+            .item(&install_cli)
             .separator()
             .services()
             .separator()
@@ -195,7 +279,12 @@ fn install_menu(app: &AppHandle) -> tauri::Result<()> {
         .select_all()
         .build()?;
 
-    menu_builder = menu_builder.item(&file_submenu).item(&edit_submenu);
+    let view_submenu = SubmenuBuilder::new(app, "View").item(&reload).build()?;
+
+    menu_builder = menu_builder
+        .item(&file_submenu)
+        .item(&edit_submenu)
+        .item(&view_submenu);
 
     #[cfg(target_os = "macos")]
     {
@@ -212,10 +301,14 @@ fn install_menu(app: &AppHandle) -> tauri::Result<()> {
     app.set_menu(menu)?;
 
     let handle = app.clone();
-    app.on_menu_event(move |_, event| {
-        if event.id().0 == "open" {
-            prompt_open(&handle);
+    app.on_menu_event(move |_, event| match event.id().0.as_str() {
+        "open" => prompt_open(&handle),
+        "reload" => {
+            let _ = handle.emit("file-changed", ());
         }
+        #[cfg(target_os = "macos")]
+        "install-cli" => install_cli(&handle),
+        _ => {}
     });
 
     Ok(())

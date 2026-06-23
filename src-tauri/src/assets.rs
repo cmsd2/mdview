@@ -22,6 +22,9 @@ pub fn handle(state: &AppState, request: &Request<Vec<u8>>) -> Response<Vec<u8>>
                 Response::builder()
                     .status(200)
                     .header("Content-Type", mime.as_ref())
+                    // Assets can change, move, or vanish under a live-reloading
+                    // viewer, so never let the WebView serve a stale copy.
+                    .header("Cache-Control", "no-store")
                     .header("Access-Control-Allow-Origin", "*")
                     .body(bytes)
                     .unwrap_or_else(|_| not_found())
