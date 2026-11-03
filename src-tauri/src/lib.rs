@@ -12,8 +12,18 @@ use clap::Parser;
 use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 #[cfg(target_os = "macos")]
 use tauri::menu::AboutMetadata;
-use tauri::{AppHandle, Emitter, Manager, Theme, WebviewWindow};
+use tauri::{AppHandle, DragDropEvent, Emitter, Manager, Theme, WebviewWindow, WindowEvent};
 use tauri_plugin_dialog::DialogExt;
+
+/// File extensions treated as Markdown by File > Open… and drag-and-drop.
+/// `frontend/app.js` mirrors this list for its drop-target hint.
+const MARKDOWN_EXTS: &[&str] = &["md", "markdown", "mdown", "mkd", "mkdn"];
+
+fn is_markdown(path: &Path) -> bool {
+    path.extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| MARKDOWN_EXTS.iter().any(|m| m.eq_ignore_ascii_case(e)))
+}
 
 /// Command-line interface.
 #[derive(Parser, Debug)]
@@ -24,8 +34,9 @@ struct Cli {
 }
 
 /// Shared app state: the document being viewed and its directory. Wrapped in a
-/// `Mutex` because the open document can change at runtime (File > Open…, drag
-/// onto the dock icon, or the macOS "Open Document" Apple Event from Finder).
+/// `Mutex` because the open document can change at runtime (File > Open…, a
+/// file dropped onto the window or dock icon, or the macOS "Open Document"
+/// Apple Event from Finder).
 pub struct AppState {
     pub doc: Mutex<DocState>,
 }
@@ -227,7 +238,7 @@ fn prompt_open(app: &AppHandle) {
     app.clone()
         .dialog()
         .file()
-        .add_filter("Markdown", &["md", "markdown", "mdown", "mkd", "mkdn"])
+        .add_filter("Markdown", MARKDOWN_EXTS)
         .pick_file(move |chosen| {
             let Some(file) = chosen else { return };
             if let Ok(path) = file.into_path() {
@@ -236,6 +247,18 @@ fn prompt_open(app: &AppHandle) {
                 }
             }
         });
+}
+
+/// Open the first Markdown file among those dropped onto the window. Anything
+/// else (folders, images, other text files) is ignored; the frontend's drop
+/// overlay has already told the user so.
+fn open_dropped(app: &AppHandle, paths: &[PathBuf]) {
+    let Some(path) = paths.iter().find(|p| is_markdown(p)) else {
+        return;
+    };
+    if let Err(e) = open_document(app, path) {
+        eprintln!("mdview: {e}");
+    }
 }
 
 /// Build the application menu. On macOS we include the standard App / Edit /
@@ -368,6 +391,11 @@ pub fn run() {
             let state = ctx.app_handle().state::<AppState>();
             assets::handle(&state, &request)
         })
+        .on_window_event(|window, event| {
+            if let WindowEvent::DragDrop(DragDropEvent::Drop { paths, .. }) = event {
+                open_dropped(window.app_handle(), paths);
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             render,
             get_theme,
@@ -423,4 +451,19 @@ pub fn run() {
         #[cfg(not(target_os = "macos"))]
         let _ = (app_handle, event);
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn markdown_extensions_are_recognised() {
+        assert!(is_markdown(Path::new("README.md")));
+        assert!(is_markdown(Path::new("notes/Guide.MARKDOWN")));
+        assert!(is_markdown(Path::new("a.mkdn")));
+        assert!(!is_markdown(Path::new("image.png")));
+        assert!(!is_markdown(Path::new("notes.txt")));
+        assert!(!is_markdown(Path::new("md")));
+    }
 }

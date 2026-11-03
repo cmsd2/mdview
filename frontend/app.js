@@ -248,6 +248,32 @@ function wireFind() {
   });
 }
 
+// ---- Drag and drop ---------------------------------------------------------
+// The Rust side opens the dropped file (see `open_dropped` in lib.rs); this
+// only shows an overlay while a drag is over the window, saying whether the
+// drop will be accepted.
+
+// Mirrors MARKDOWN_EXTS in lib.rs.
+const MARKDOWN_RE = /\.(md|markdown|mdown|mkd|mkdn)$/i;
+
+const dropOverlay = document.getElementById("drop-overlay");
+const dropMessage = document.getElementById("drop-message");
+
+function showDropOverlay(paths) {
+  const accepted = paths.some((p) => MARKDOWN_RE.test(p));
+  dropOverlay.classList.toggle("rejected", !accepted);
+  dropMessage.textContent = accepted ? "Drop to open" : "Not a Markdown file";
+  dropOverlay.hidden = false;
+}
+
+async function wireDragDrop() {
+  const { getCurrentWebview } = window.__TAURI__.webview;
+  await getCurrentWebview().onDragDropEvent(({ payload }) => {
+    if (payload.type === "enter") showDropOverlay(payload.paths);
+    else if (payload.type === "drop" || payload.type === "leave") dropOverlay.hidden = true;
+  });
+}
+
 // ---- Render cycle ----------------------------------------------------------
 
 async function load() {
@@ -307,6 +333,8 @@ async function init() {
   document.getElementById("print").addEventListener("click", () =>
     invoke("print").catch((err) => console.error("print failed", err))
   );
+
+  wireDragDrop().catch((err) => console.warn("drag-and-drop unavailable", err));
 
   await load();
   await listen("file-changed", load);

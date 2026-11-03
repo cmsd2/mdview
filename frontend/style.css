@@ -153,6 +153,46 @@ body {
   color: #1f2328;
 }
 
+/* Shown while a file is dragged over the window. */
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px;
+  border: 2px dashed var(--btn-active-fg);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--page-bg) 80%, transparent);
+  pointer-events: none;
+}
+
+.drop-overlay[hidden] {
+  display: none;
+}
+
+.drop-overlay.rejected {
+  border-color: #d1242f;
+}
+
+.drop-message {
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  background: var(--toolbar-bg);
+  color: var(--btn-active-fg);
+  border: 1px solid var(--toolbar-border);
+  font:
+    15px/1.4 -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.drop-overlay.rejected .drop-message {
+  color: #d1242f;
+}
+
 main {
   display: flex;
   justify-content: center;
@@ -194,7 +234,8 @@ main {
   }
 
   .toolbar,
-  .findbar {
+  .findbar,
+  .drop-overlay {
     display: none !important;
   }
 

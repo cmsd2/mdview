@@ -117,6 +117,12 @@ Reload** menu item emits `file-changed` directly to force a re-render.
     second pair of light sheets carry `media="print"`, so printouts are light
     in either theme. `style.css` hides the chrome and sets page-break rules
     under `@media print`.
+  - Drag and drop: a file dropped on the window arrives in Rust as
+    `WindowEvent::DragDrop`; `open_dropped` picks the first path with a
+    Markdown extension and calls `open_document` (non-Markdown drops are
+    ignored). The frontend only listens to `onDragDropEvent` to show an
+    overlay ("Drop to open" / "Not a Markdown file") while a drag is over the
+    window. Opening stays in Rust so the frontend still never names a file.
 
 ## IPC contract
 

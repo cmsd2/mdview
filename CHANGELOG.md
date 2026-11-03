@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   use the light theme, hide the toolbar and find bar, wrap long code lines, and
   avoid splitting code blocks, images, table rows, and display math across
   pages.
+- Drag and drop: drop a Markdown file (`.md`, `.markdown`, `.mdown`, `.mkd`,
+  `.mkdn`) onto the window to open it in place of the current document. An
+  overlay shows while dragging and says when the file isn't Markdown; if
+  several files are dropped, the first Markdown one is opened.
 - **View > Reload** menu item (`Ctrl`/`Cmd`-`R`) to re-render the current
   document on demand.
 - macOS: **mdview > Install 'mdview' Shell Command** symlinks the app into
