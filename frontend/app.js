@@ -303,6 +303,11 @@ async function init() {
 
   wireFind();
 
+  // Cmd/Ctrl-P is a native menu accelerator, so only the button needs wiring.
+  document.getElementById("print").addEventListener("click", () =>
+    invoke("print").catch((err) => console.error("print failed", err))
+  );
+
   await load();
   await listen("file-changed", load);
   await listen("watch-error", (e) =>

@@ -110,6 +110,13 @@ Reload** menu item emits `file-changed` directly to force a re-render.
   - A theme toggle in the UI calls `invoke("set_theme", { theme })`, which
     persists the choice to `config.toml` and flips `data-theme` immediately.
     Selecting "system" clears the override and reverts to the OS hint.
+  - Printing: **File > Print…** (`CmdOrCtrl+P`, handled in Rust) and the
+    toolbar button (`invoke("print")`) both call `WebviewWindow::print()`, the
+    platform WebView's native print API; `window.print()` is not used because
+    WKWebView ignores it. The screen theme sheets carry `media="screen"` and a
+    second pair of light sheets carry `media="print"`, so printouts are light
+    in either theme. `style.css` hides the chrome and sets page-break rules
+    under `@media print`.
 
 ## IPC contract
 
@@ -117,6 +124,7 @@ Reload** menu item emits `file-changed` directly to force a re-render.
 |-----------|------|---------|-------|
 | JS → Rust | `invoke("render")` | none (path is in managed state) | Returns `{ html, title }`. |
 | JS → Rust | `invoke("get_theme")` | none | Returns the resolved theme `"light" \| "dark"` (override → OS hint → light). |
+| JS → Rust | `invoke("print")` | none | Opens the native print dialog for the window. |
 | JS → Rust | `invoke("set_theme")` | `{ theme: "light" \| "dark" \| "system" }` | Persists/clears the override in `config.toml`; returns the new resolved theme. |
 | Rust → JS | `emit("file-changed")` | `{ path }` | Frontend re-invokes `render`. |
 | JS → Rust | custom scheme `mdview://<relpath>` | — | Returns asset bytes + MIME. |

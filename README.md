@@ -8,6 +8,7 @@ A lightweight, read-only **Markdown viewer** with live file-watching.
 - **Math** ([KaTeX](https://katex.org/)), **syntax highlighting** ([highlight.js](https://highlightjs.org/)), **embedded images** and common media (video/audio/SVG/PDF).
 - **Live reload** — edits to the file update the view instantly, preserving scroll position.
 - **Find** — `Ctrl`/`Cmd`-`F` highlights all matches with next/prev navigation and a match count.
+- **Print** — `Ctrl`/`Cmd`-`P` prints the document (always in the light theme), or saves it to PDF via the OS dialog.
 - **Light / dark / system** theme, with the choice remembered in a config file.
 
 > No editing. This is a viewer.

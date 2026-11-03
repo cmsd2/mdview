@@ -6,8 +6,11 @@
     <title>mdview</title>
 
     <!-- Swappable themes: href is changed at runtime by app.js -->
-    <link id="md-theme" rel="stylesheet" href="vendor/github-markdown-light.css" />
-    <link id="hljs-theme" rel="stylesheet" href="vendor/highlight/github.min.css" />
+    <link id="md-theme" rel="stylesheet" media="screen" href="vendor/github-markdown-light.css" />
+    <link id="hljs-theme" rel="stylesheet" media="screen" href="vendor/highlight/github.min.css" />
+    <!-- Printing always uses the light themes, whatever is on screen. -->
+    <link rel="stylesheet" media="print" href="vendor/github-markdown-light.css" />
+    <link rel="stylesheet" media="print" href="vendor/highlight/github.min.css" />
     <link rel="stylesheet" href="vendor/katex/katex.min.css" />
     <link rel="stylesheet" href="style.css" />
   </head>
@@ -16,6 +19,7 @@
       <span class="title" id="doc-title">mdview</span>
       <div class="controls">
         <button type="button" id="find-open" class="icon-btn" title="Find (⌘F / Ctrl+F)">⌕</button>
+        <button type="button" id="print" class="icon-btn" title="Print (⌘P / Ctrl+P)">⎙</button>
         <div class="theme-switch" role="group" aria-label="Theme">
           <button type="button" data-theme-choice="light" title="Light theme">☀</button>
           <button type="button" data-theme-choice="dark" title="Dark theme">☾</button>

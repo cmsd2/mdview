@@ -102,6 +102,14 @@ fn open_external(app: tauri::AppHandle, url: String) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
+/// Open the native print dialog for the current page. Goes through the
+/// platform WebView's print API because `window.print()` is not wired up in
+/// every WebView (notably WKWebView). `style.css` holds the print styles.
+#[tauri::command]
+fn print(window: WebviewWindow) -> Result<(), String> {
+    window.print().map_err(|e| e.to_string())
+}
+
 /// Resolve the effective theme: stored override → OS hint → light fallback.
 fn resolve_theme(window: &WebviewWindow) -> String {
     if let Some(stored) = config::load_override() {
@@ -240,6 +248,9 @@ fn install_menu(app: &AppHandle) -> tauri::Result<()> {
     let reload = MenuItemBuilder::with_id("reload", "Reload")
         .accelerator("CmdOrCtrl+R")
         .build(app)?;
+    let print_item = MenuItemBuilder::with_id("print", "Print…")
+        .accelerator("CmdOrCtrl+P")
+        .build(app)?;
 
     let mut menu_builder = MenuBuilder::new(app);
 
@@ -265,6 +276,8 @@ fn install_menu(app: &AppHandle) -> tauri::Result<()> {
 
     let file_submenu = SubmenuBuilder::new(app, "File")
         .item(&open)
+        .separator()
+        .item(&print_item)
         .separator()
         .close_window()
         .build()?;
@@ -305,6 +318,13 @@ fn install_menu(app: &AppHandle) -> tauri::Result<()> {
         "open" => prompt_open(&handle),
         "reload" => {
             let _ = handle.emit("file-changed", ());
+        }
+        "print" => {
+            if let Some(win) = handle.get_webview_window("main") {
+                if let Err(e) = win.print() {
+                    eprintln!("mdview: print failed: {e}");
+                }
+            }
         }
         #[cfg(target_os = "macos")]
         "install-cli" => install_cli(&handle),
@@ -353,7 +373,8 @@ pub fn run() {
             get_theme,
             set_theme,
             asset_base,
-            open_external
+            open_external,
+            print
         ])
         .setup(move |app| {
             install_menu(app.handle())?;

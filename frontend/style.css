@@ -178,3 +178,59 @@ main {
 .markdown-body input[type="checkbox"] {
   margin: 0 0.4em 0.1em 0;
 }
+
+/* ---- Print ---------------------------------------------------------------
+   index.html swaps in the light markdown/hljs themes for print; here we drop
+   the app chrome and let the document use the full page width. */
+@page {
+  /* 25mm sides: the common word-processor default (1in / 2.54cm). */
+  margin: 18mm 25mm;
+}
+
+@media print {
+  :root,
+  [data-theme="dark"] {
+    --page-bg: #ffffff;
+  }
+
+  .toolbar,
+  .findbar {
+    display: none !important;
+  }
+
+  .markdown-body {
+    max-width: none;
+    padding: 0;
+  }
+
+  /* Wrap long code lines instead of clipping them at the page edge. */
+  .markdown-body pre,
+  .markdown-body pre code {
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow: visible;
+  }
+
+  .markdown-body pre,
+  .markdown-body blockquote,
+  .markdown-body img,
+  .markdown-body tr,
+  .markdown-body .katex-display {
+    break-inside: avoid;
+  }
+
+  .markdown-body h1,
+  .markdown-body h2,
+  .markdown-body h3,
+  .markdown-body h4,
+  .markdown-body h5,
+  .markdown-body h6 {
+    break-after: avoid;
+  }
+
+  ::highlight(find-match),
+  ::highlight(find-current) {
+    background-color: transparent;
+    color: inherit;
+  }
+}

@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (e.g. a README at a monorepo root): individual files are watched via OS
   events, while only the relevant directories are polled (a bounded, one-level
   scan), avoiding whole-subtree event streams.
+- **File > Print…** (`Ctrl`/`Cmd`-`P`) and a toolbar print button open the
+  native print dialog (or save to PDF where the OS offers it). Printouts always
+  use the light theme, hide the toolbar and find bar, wrap long code lines, and
+  avoid splitting code blocks, images, table rows, and display math across
+  pages.
 - **View > Reload** menu item (`Ctrl`/`Cmd`-`R`) to re-render the current
   document on demand.
 - macOS: **mdview > Install 'mdview' Shell Command** symlinks the app into

@@ -29,7 +29,8 @@
       local server and opens your browser instead of a window (the lightest of
       all footprints; reuses the same render path).
 - [ ] Mermaid / diagram blocks.
-- [ ] Print / export-to-HTML.
+- [x] Print (File > Print…, `Ctrl`/`Cmd`-`P`; light theme, print stylesheet).
+- [ ] Export-to-HTML.
 - [ ] Multi-tab or directory-browsing mode.
 
 ## Explicit non-goals
