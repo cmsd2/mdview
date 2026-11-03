@@ -12,7 +12,7 @@ use clap::Parser;
 use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 #[cfg(target_os = "macos")]
 use tauri::menu::AboutMetadata;
-use tauri::{AppHandle, Emitter, Manager, RunEvent, Theme, WebviewWindow};
+use tauri::{AppHandle, Emitter, Manager, Theme, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
 
 /// Command-line interface.
@@ -410,7 +410,8 @@ pub fn run() {
     app.run(|app_handle, event| {
         // macOS "Open Document" Apple Event — fires when the user opens a .md
         // file via Finder, drags onto the dock, or `open -a mdview file.md`.
-        if let RunEvent::Opened { urls } = event {
+        #[cfg(target_os = "macos")]
+        if let tauri::RunEvent::Opened { urls } = event {
             for url in urls {
                 if let Ok(path) = url.to_file_path() {
                     if let Err(e) = open_document(app_handle, &path) {
@@ -419,5 +420,7 @@ pub fn run() {
                 }
             }
         }
+        #[cfg(not(target_os = "macos"))]
+        let _ = (app_handle, event);
     });
 }

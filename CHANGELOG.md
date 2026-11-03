@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reload now reflects images that were edited, moved, or deleted. Asset
   responses are served with `Cache-Control: no-store` and asset URLs are
   cache-busted per render, so the WebView no longer shows a stale cached copy.
+- Windows and Linux builds compile again: the macOS-only "Open Document" event
+  handler is now gated to macOS.
 
 ## [0.1.0] - 2026-06-16
 
