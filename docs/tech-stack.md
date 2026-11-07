@@ -11,6 +11,7 @@
 | File watching | **notify** | Cross-platform FS events (FSEvents / ReadDirectoryChangesW / inotify) with a debounced wrapper. |
 | Math | **KaTeX** (client) | Fast, font-based, no network, far lighter than MathJax. comrak emits math markers; KaTeX renders them. |
 | Syntax highlighting | **highlight.js** (client) | Kept on the client to keep the Rust binary lean (vs. bundling syntect's syntax/theme set). |
+| Fonts | **CMU Serif** (`computer-modern`, OFL) | The Computer Modern face. Only the four woff2 text faces are vendored (~770 KB); Sans-serif and Serif use system fonts. KaTeX's own `KaTeX_Main` was rejected: it lacks most accented letters. |
 | Base styling | **github-markdown-css** | Battle-tested GitHub look; ships a light and a dark variant. |
 | Config location | **directories** crate | Resolves the correct per-OS config dir (XDG on Linux, `Application Support` on macOS, `%APPDATA%` on Windows) without hand-rolling paths. |
 | Config format | **toml** + **serde** | Human-readable, comment-friendly config file; serde for (de)serialization. |

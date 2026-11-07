@@ -2,6 +2,7 @@
 
 mod assets;
 mod config;
+mod prefs;
 mod render;
 mod watch;
 
@@ -315,7 +316,8 @@ fn install_menu(app: &AppHandle) -> tauri::Result<()> {
         .select_all()
         .build()?;
 
-    let view_submenu = SubmenuBuilder::new(app, "View").item(&reload).build()?;
+    let view_submenu =
+        prefs::add_view_items(app, SubmenuBuilder::new(app, "View").item(&reload))?.build()?;
 
     menu_builder = menu_builder
         .item(&file_submenu)
@@ -351,7 +353,9 @@ fn install_menu(app: &AppHandle) -> tauri::Result<()> {
         }
         #[cfg(target_os = "macos")]
         "install-cli" => install_cli(&handle),
-        _ => {}
+        id => {
+            prefs::handle_menu(&handle, id);
+        }
     });
 
     Ok(())
@@ -387,6 +391,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState { doc: Mutex::new(initial_doc) })
         .manage(WatcherState(Mutex::new(None)))
+        .manage(prefs::PrefsState::load())
         .register_uri_scheme_protocol("mdview", |ctx, request| {
             let state = ctx.app_handle().state::<AppState>();
             assets::handle(&state, &request)
@@ -402,7 +407,8 @@ pub fn run() {
             set_theme,
             asset_base,
             open_external,
-            print
+            print,
+            prefs::get_prefs
         ])
         .setup(move |app| {
             install_menu(app.handle())?;

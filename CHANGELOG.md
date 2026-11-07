@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (e.g. a README at a monorepo root): individual files are watched via OS
   events, while only the relevant directories are polled (a bounded, one-level
   scan), avoiding whole-subtree event streams.
+- **Text size and font face.** View > Zoom In / Zoom Out / Actual Size
+  (`Ctrl`/`Cmd` `=`, `-`, `0`) step the document's text size from 9 to 28 pt
+  (default 12 pt), leaving the toolbar alone. View > Font picks **Sans-serif**
+  (the GitHub default), **Serif** (system serif fonts such as Charter, Georgia
+  or Noto Serif), or **Computer Modern** (bundled CMU Serif, OFL). View > Print
+  Text Size sets a separate print size (default 11 pt) or **Same as Display**.
+  All three are remembered in `config.toml`.
 - **File > Print…** (`Ctrl`/`Cmd`-`P`) and a toolbar print button open the
   native print dialog (or save to PDF where the OS offers it). Printouts always
   use the light theme, hide the toolbar and find bar, wrap long code lines, and

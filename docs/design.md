@@ -80,13 +80,33 @@ Reload** menu item emits `file-changed` directly to force a re-render.
   - macOS: `~/Library/Application Support/mdview/config.toml`
   - Windows: `%APPDATA%\mdview\config.toml`
 - Loads on startup; **a missing/invalid file is not an error** — it just means
-  "no stored preference." The file is created lazily, only when the user first
-  overrides the theme.
+  "no stored preference." The file is created lazily, the first time the user
+  changes a setting. Every save reads, updates and rewrites the whole file, so
+  the theme and the reading preferences don't clobber each other.
 - Schema (TOML):
   ```toml
   # "light" | "dark" | omitted/"system" = follow the OS hint
   theme = "dark"
+  font = "cm"              # "sans" | "serif" | "cm" (Computer Modern)
+  text_size = 12.0         # on-screen body size, pt (12pt = 16px)
+  print_size = 11.0        # printed body size, pt
+  link_print_size = false  # true = print at text_size
   ```
+  Unknown faces and sizes outside 6–48 pt fall back to the defaults.
+
+### 5a. Reading preferences (`src/prefs.rs`)
+- Holds the current `Prefs` in managed state and builds the View-menu items
+  that change them: Zoom In / Zoom Out / Actual Size (stepping through
+  `config::TEXT_SIZES`), a Font submenu, and a Print Text Size submenu (Same as
+  Display, plus `config::PRINT_SIZES`). It keeps the check marks in sync with
+  the state, since a check item toggles itself before the click event arrives.
+- On a change it saves via `config::save_prefs` and emits `prefs-changed`.
+- The frontend sets `data-font` on `<html>` and the `--text-size` /
+  `--print-size` CSS variables; `style.css` maps those onto `.markdown-body`
+  (with `max-width` in em, so zooming keeps the line length) and onto the
+  print rules. Code keeps its monospace font in every face. The Computer Modern
+  face is CMU Serif, vendored as woff2 from the `computer-modern` npm package
+  by `scripts/copy-vendor.mjs`.
 - **Theme resolution precedence** (first match wins):
   1. Stored override in `config.toml` (`light` or `dark`).
   2. OS hint — Tauri reports the window's `theme()` (Dark/Light) from the
@@ -132,6 +152,8 @@ Reload** menu item emits `file-changed` directly to force a re-render.
 | JS → Rust | `invoke("get_theme")` | none | Returns the resolved theme `"light" \| "dark"` (override → OS hint → light). |
 | JS → Rust | `invoke("print")` | none | Opens the native print dialog for the window. |
 | JS → Rust | `invoke("set_theme")` | `{ theme: "light" \| "dark" \| "system" }` | Persists/clears the override in `config.toml`; returns the new resolved theme. |
+| JS → Rust | `invoke("get_prefs")` | none | Returns `{ font, text_size, print_size, link_print_size }`. |
+| Rust → JS | `emit("prefs-changed")` | same shape as `get_prefs` | Sent after a View-menu change; frontend re-applies. |
 | Rust → JS | `emit("file-changed")` | `{ path }` | Frontend re-invokes `render`. |
 | JS → Rust | custom scheme `mdview://<relpath>` | — | Returns asset bytes + MIME. |
 

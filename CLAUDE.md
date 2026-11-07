@@ -22,7 +22,8 @@ full design lives in [`docs/`](./docs) — read it before non-trivial work.
 src-tauri/            Rust backend (the app crate; lib + thin main)
   src/lib.rs          CLI (clap), Tauri builder, commands, setup
   src/render.rs       comrak -> ammonia sanitize; welcome screen; title
-  src/config.rs       per-OS theme config (directories + toml)
+  src/config.rs       per-OS config: theme + reading prefs (directories + toml)
+  src/prefs.rs        View-menu font/size prefs -> "prefs-changed" event
   src/watch.rs        debounced file watching (notify) -> "file-changed" event
   src/assets.rs       mdview:// custom protocol (sandboxed to the doc's dir)
   tauri.conf.json     window, CSP, bundle, withGlobalTauri

@@ -198,11 +198,98 @@ main {
   justify-content: center;
 }
 
-/* github-markdown-css targets .markdown-body; we just constrain width. */
+/* github-markdown-css targets .markdown-body; we constrain width and take
+   over the body size and face. app.js sets --text-size / --print-size and
+   data-font from the View-menu preferences. The width is in em (860px at the
+   default 16px) so zooming keeps the same line length. */
 .markdown-body {
   width: 100%;
-  max-width: 860px;
+  max-width: 53.75em;
   padding: 2.2rem 2rem 4rem;
+  font-size: var(--text-size, 12pt);
+}
+
+/* github-markdown-css sizes these in px; restate them in em so they zoom. */
+.markdown-body kbd {
+  font-size: 0.6875em;
+}
+
+.markdown-body .footnotes,
+.markdown-body .csv-data th {
+  font-size: 0.75em;
+}
+
+/* Computer Modern Unicode, vendored from the computer-modern package (OFL).
+   CMU's "500" files are its regular weight. */
+@font-face {
+  font-family: "CMU Serif";
+  font-style: normal;
+  font-weight: 400;
+  src: url("vendor/cmu/cmu-serif-500-roman.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "CMU Serif";
+  font-style: italic;
+  font-weight: 400;
+  src: url("vendor/cmu/cmu-serif-500-italic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "CMU Serif";
+  font-style: normal;
+  font-weight: 700;
+  src: url("vendor/cmu/cmu-serif-700-roman.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "CMU Serif";
+  font-style: italic;
+  font-weight: 700;
+  src: url("vendor/cmu/cmu-serif-700-italic.woff2") format("woff2");
+}
+
+/* Code keeps github-markdown-css's monospace stack in every face. */
+[data-font="serif"] .markdown-body {
+  font-family:
+    Charter,
+    "Iowan Old Style",
+    Georgia,
+    Cambria,
+    "Noto Serif",
+    "DejaVu Serif",
+    serif;
+}
+
+[data-font="cm"] .markdown-body {
+  font-family: "CMU Serif", "Latin Modern Roman", serif;
+}
+
+/* Brief "Text size 14 pt" notice when zooming. */
+.zoom-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 25;
+  transform: translateX(-50%);
+  padding: 0.35rem 0.9rem;
+  border-radius: 8px;
+  background: var(--toolbar-bg);
+  color: var(--toolbar-fg);
+  border: 1px solid var(--toolbar-border);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  font:
+    13px/1.4 -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.zoom-toast.visible {
+  opacity: 1;
 }
 
 .error {
@@ -235,13 +322,15 @@ main {
 
   .toolbar,
   .findbar,
-  .drop-overlay {
+  .drop-overlay,
+  .zoom-toast {
     display: none !important;
   }
 
   .markdown-body {
     max-width: none;
     padding: 0;
+    font-size: var(--print-size, 11pt);
   }
 
   /* Wrap long code lines instead of clipping them at the page edge. */

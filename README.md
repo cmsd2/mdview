@@ -9,6 +9,7 @@ A lightweight, read-only **Markdown viewer** with live file-watching.
 - **Live reload** — edits to the file update the view instantly, preserving scroll position.
 - **Find** — `Ctrl`/`Cmd`-`F` highlights all matches with next/prev navigation and a match count.
 - **Print** — `Ctrl`/`Cmd`-`P` prints the document (always in the light theme), or saves it to PDF via the OS dialog.
+- **Text size and font** — zoom with `Ctrl`/`Cmd` `=` / `-` / `0`, choose sans-serif, serif or Computer Modern, and print at a separate or linked size.
 - **Light / dark / system** theme, with the choice remembered in a config file.
 
 > No editing. This is a viewer.
@@ -72,6 +73,22 @@ persisted to:
 | Linux | `${XDG_CONFIG_HOME:-~/.config}/mdview/config.toml` |
 | macOS | `~/Library/Application Support/mdview/config.toml` |
 | Windows | `%APPDATA%\mdview\config.toml` |
+
+## Text size and font
+
+The **View** menu controls how the document reads; the choices are saved in the
+same `config.toml`:
+
+| Setting | Menu | Config key | Default |
+|---------|------|------------|---------|
+| Display text size | Zoom In / Zoom Out / Actual Size (`Ctrl`/`Cmd` `=` `-` `0`) | `text_size` (pt) | `12` |
+| Font face | Font > Sans-serif / Serif / Computer Modern | `font` (`sans` \| `serif` \| `cm`) | `sans` |
+| Print text size | Print Text Size > 9–14 pt | `print_size` (pt) | `11` |
+| Print at the display size | Print Text Size > Same as Display | `link_print_size` | `false` |
+
+Code blocks keep the monospace font in every face. Computer Modern uses the
+bundled [CMU Serif](https://github.com/stevenpetryk/computer-modern) fonts
+(SIL Open Font License).
 
 ## Development
 

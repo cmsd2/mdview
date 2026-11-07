@@ -46,6 +46,37 @@ async function chooseTheme(choice) {
   markActiveChoice(choice);
 }
 
+// ---- Reading preferences (font face, text size) ----------------------------
+// Rust owns these (View menu + config.toml); we apply them as `data-font` and
+// the --text-size / --print-size CSS variables, and again on "prefs-changed".
+
+const zoomToast = document.getElementById("zoom-toast");
+let appliedPrefs = null;
+let toastTimer;
+
+function applyPrefs(prefs) {
+  const prev = appliedPrefs;
+  const reflows = prev && (prev.font !== prefs.font || prev.text_size !== prefs.text_size);
+  const ratio = reflows ? scrollRatio() : 0;
+
+  const root = document.documentElement;
+  root.dataset.font = prefs.font;
+  root.style.setProperty("--text-size", `${prefs.text_size}pt`);
+  const printSize = prefs.link_print_size ? prefs.text_size : prefs.print_size;
+  root.style.setProperty("--print-size", `${printSize}pt`);
+
+  if (reflows) restoreScroll(ratio);
+  if (prev && prev.text_size !== prefs.text_size) showZoomToast(prefs.text_size);
+  appliedPrefs = prefs;
+}
+
+function showZoomToast(size) {
+  zoomToast.textContent = `Text size ${size} pt`;
+  zoomToast.classList.add("visible");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => zoomToast.classList.remove("visible"), 1200);
+}
+
 // ---- Asset URL rewriting ---------------------------------------------------
 
 function isAbsolute(url) {
@@ -276,13 +307,26 @@ async function wireDragDrop() {
 
 // ---- Render cycle ----------------------------------------------------------
 
+// Reading position as a fraction of the scrollable height, so it survives a
+// re-render or reflow that changes the document's length.
+function scrollRatio() {
+  const scroller = document.scrollingElement || document.documentElement;
+  return scroller.scrollHeight > scroller.clientHeight
+    ? scroller.scrollTop / (scroller.scrollHeight - scroller.clientHeight)
+    : 0;
+}
+
+// Restore a scrollRatio() after layout settles.
+function restoreScroll(ratio) {
+  const scroller = document.scrollingElement || document.documentElement;
+  requestAnimationFrame(() => {
+    scroller.scrollTop = ratio * (scroller.scrollHeight - scroller.clientHeight);
+  });
+}
+
 async function load() {
   assetVersion++;
-  const scroller = document.scrollingElement || document.documentElement;
-  const ratio =
-    scroller.scrollHeight > scroller.clientHeight
-      ? scroller.scrollTop / (scroller.scrollHeight - scroller.clientHeight)
-      : 0;
+  const ratio = scrollRatio();
 
   try {
     const { html, title } = await invoke("render");
@@ -299,10 +343,7 @@ async function load() {
       .setTitle(`${title} — mdview`)
       .catch(() => {});
 
-    // Restore reading position after layout settles.
-    requestAnimationFrame(() => {
-      scroller.scrollTop = ratio * (scroller.scrollHeight - scroller.clientHeight);
-    });
+    restoreScroll(ratio);
   } catch (err) {
     content.innerHTML = `<div class="error"><strong>Could not render:</strong><br>${String(
       err
@@ -322,6 +363,9 @@ async function init() {
   const resolved = await invoke("get_theme");
   applyTheme(resolved);
   markActiveChoice(resolved); // best-effort until the user picks explicitly
+
+  applyPrefs(await invoke("get_prefs"));
+  await listen("prefs-changed", (e) => applyPrefs(e.payload));
 
   for (const btn of document.querySelectorAll("[data-theme-choice]")) {
     btn.addEventListener("click", () => chooseTheme(btn.dataset.themeChoice));

@@ -58,4 +58,11 @@ file("@highlightjs/cdn-assets/highlight.min.js", "highlight/highlight.min.js");
 file("@highlightjs/cdn-assets/styles/github.min.css", "highlight/github.min.css");
 file("@highlightjs/cdn-assets/styles/github-dark.min.css", "highlight/github-dark.min.css");
 
+// CMU Serif (Computer Modern Unicode, OFL) for the "Computer Modern" face.
+// woff2 only — every target WebView reads it. @font-face lives in style.css.
+for (const face of ["500-roman", "500-italic", "700-roman", "700-italic"]) {
+  file(`computer-modern/fonts/cmu-serif-${face}.woff2`, `cmu/cmu-serif-${face}.woff2`);
+}
+file("computer-modern/OFL.txt", "cmu/OFL.txt");
+
 console.log("[vendor] done");
