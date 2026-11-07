@@ -45,6 +45,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reload now reflects images that were edited, moved, or deleted. Asset
   responses are served with `Cache-Control: no-store` and asset URLs are
   cache-busted per render, so the WebView no longer shows a stale cached copy.
+- macOS printouts now keep an 18 mm bottom margin on every page (text used to
+  run to the bottom edge). mdview runs its own AppKit print operation with
+  18 mm top/bottom and 25 mm side margins, because Tauri's print call sets the
+  page margins to zero and WebKit doesn't reliably apply CSS `@page` margins
+  on that path.
 - Windows and Linux builds compile again: the macOS-only "Open Document" event
   handler is now gated to macOS.
 

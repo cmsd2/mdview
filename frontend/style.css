@@ -310,7 +310,9 @@ main {
    index.html swaps in the light markdown/hljs themes for print; here we drop
    the app chrome and let the document use the full page width. */
 @page {
-  /* 25mm sides: the common word-processor default (1in / 2.54cm). */
+  /* 25mm sides: the common word-processor default (1in / 2.54cm). On macOS
+     app.js sets this to 0 and src-tauri/src/print.rs applies the same margins
+     natively; keep the two in step. */
   margin: 18mm 25mm;
 }
 
