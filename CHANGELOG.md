@@ -53,6 +53,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Windows and Linux builds compile again: the macOS-only "Open Document" event
   handler is now gated to macOS.
 
+### Security
+
+- Upgraded the vendored KaTeX from 0.16 to 0.19.1 to fix
+  [GHSA-238p-pmpm-9mq7](https://github.com/advisories/GHSA-238p-pmpm-9mq7)
+  (existing prototype pollution could bypass KaTeX's trust restrictions).
+  Math renders as before. KaTeX's internal CSS classes now carry a `katex-`
+  prefix (`.base` becomes `.katex-base`, and so on), which matters only to
+  custom styles aimed at those classes.
+
 ## [0.1.0] - 2026-06-16
 
 Initial release: a lightweight, read-only Markdown viewer with live
