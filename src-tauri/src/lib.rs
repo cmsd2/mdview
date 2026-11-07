@@ -3,7 +3,6 @@
 mod assets;
 mod config;
 mod prefs;
-mod print;
 mod render;
 mod watch;
 
@@ -115,12 +114,12 @@ fn open_external(app: tauri::AppHandle, url: String) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
-/// Open the native print dialog for the current page. Goes through native
-/// print APIs (see `print.rs`) because `window.print()` is not wired up in
+/// Open the native print dialog for the current page. Goes through the
+/// platform WebView's print API because `window.print()` is not wired up in
 /// every WebView (notably WKWebView). `style.css` holds the print styles.
 #[tauri::command]
 fn print(window: WebviewWindow) -> Result<(), String> {
-    print::print(&window)
+    window.print().map_err(|e| e.to_string())
 }
 
 /// Resolve the effective theme: stored override → OS hint → light fallback.
@@ -347,7 +346,7 @@ fn install_menu(app: &AppHandle) -> tauri::Result<()> {
         }
         "print" => {
             if let Some(win) = handle.get_webview_window("main") {
-                if let Err(e) = print::print(&win) {
+                if let Err(e) = win.print() {
                     eprintln!("mdview: print failed: {e}");
                 }
             }

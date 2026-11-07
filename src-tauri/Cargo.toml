@@ -40,13 +40,6 @@ toml = "0.8"
 mime_guess = "2"
 percent-encoding = "2"
 
-# macOS native printing with real page margins (src/print.rs). These are
-# already in the build via wry; listed here to call AppKit's print API directly.
-[target.'cfg(target_os = "macos")'.dependencies]
-objc2 = "0.6"
-objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSPrintInfo", "NSPrintOperation", "NSResponder", "NSView", "NSWindow"] }
-objc2-web-kit = { version = "0.3", default-features = false, features = ["std", "objc2-app-kit", "WKWebView"] }
-
 [profile.release]
 opt-level = "s"   # optimise for size — keeps the binary small (priority #2)
 lto = true

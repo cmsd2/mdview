@@ -310,9 +310,11 @@ main {
    index.html swaps in the light markdown/hljs themes for print; here we drop
    the app chrome and let the document use the full page width. */
 @page {
-  /* 25mm sides: the common word-processor default (1in / 2.54cm). On macOS
-     app.js sets this to 0 and src-tauri/src/print.rs applies the same margins
-     natively; keep the two in step. */
+  /* 25mm sides: the common word-processor default (1in / 2.54cm). These are
+     the only margins on every platform: on macOS, WKWebView paginates with
+     the @page margins and ignores NSPrintInfo's (measured by printing to PDF
+     with native margins on and off), so keep this rule rather than zeroing
+     it in favour of native margins. */
   margin: 18mm 25mm;
 }
 

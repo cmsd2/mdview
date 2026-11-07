@@ -131,14 +131,12 @@ Reload** menu item emits `file-changed` directly to force a re-render.
     persists the choice to `config.toml` and flips `data-theme` immediately.
     Selecting "system" clears the override and reverts to the OS hint.
   - Printing: **File > Print…** (`CmdOrCtrl+P`, handled in Rust) and the
-    toolbar button (`invoke("print")`) both call `print::print`
-    (`src/print.rs`); `window.print()` is not used because WKWebView ignores
-    it. On Windows and Linux that is `WebviewWindow::print()`, whose print UI
-    honours the `@page` margins in `style.css`. On macOS Tauri's `print()`
-    zeroes the AppKit margins and WebKit doesn't reliably apply `@page` there,
-    so `print.rs` runs its own `NSPrintOperation` over the `WKWebView` with
-    18 mm / 25 mm margins set on the shared `NSPrintInfo`, and `app.js`
-    overrides `@page` to `margin: 0` to avoid doubling them. The screen theme sheets carry `media="screen"` and a
+    toolbar button (`invoke("print")`) both call `WebviewWindow::print()`, the
+    platform WebView's native print API; `window.print()` is not used because
+    WKWebView ignores it. Page margins come only from the `@page` rule in
+    `style.css`: on macOS WKWebView ignores `NSPrintInfo` margins (setting
+    them natively was tried and measured to have no effect), so that rule must
+    not be zeroed. The screen theme sheets carry `media="screen"` and a
     second pair of light sheets carry `media="print"`, so printouts are light
     in either theme. `style.css` hides the chrome and sets page-break rules
     under `@media print`.

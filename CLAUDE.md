@@ -23,7 +23,6 @@ src-tauri/            Rust backend (the app crate; lib + thin main)
   src/lib.rs          CLI (clap), Tauri builder, commands, setup
   src/render.rs       comrak -> ammonia sanitize; welcome screen; title
   src/config.rs       per-OS config: theme + reading prefs (directories + toml)
-  src/print.rs        native print; macOS sets real AppKit page margins
   src/prefs.rs        View-menu font/size prefs -> "prefs-changed" event
   src/watch.rs        debounced file watching (notify) -> "file-changed" event
   src/assets.rs       mdview:// custom protocol (sandboxed to the doc's dir)

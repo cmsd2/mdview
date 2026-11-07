@@ -373,14 +373,6 @@ async function init() {
 
   wireFind();
 
-  // macOS prints with native AppKit page margins (src-tauri/src/print.rs), so
-  // drop the @page margins there rather than applying both.
-  if (/Mac/.test(navigator.userAgent)) {
-    const noPageMargins = document.createElement("style");
-    noPageMargins.textContent = "@page { margin: 0; }";
-    document.head.append(noPageMargins);
-  }
-
   // Cmd/Ctrl-P is a native menu accelerator, so only the button needs wiring.
   document.getElementById("print").addEventListener("click", () =>
     invoke("print").catch((err) => console.error("print failed", err))
