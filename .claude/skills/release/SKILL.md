@@ -102,7 +102,9 @@ Confirm with `grep -n '"version"' package.json src-tauri/tauri.conf.json`,
 
 ## 7. Homebrew
 
-The tap's `Bump` workflow runs `bump.py` hourly. To run it now:
+Publishing fires `Notify tap`, which starts the tap's `Bump` workflow. Check
+it ran: `gh run list -R cmsd2/homebrew-tap -w Bump -L 1`. If it didn't (no
+`TAP_DISPATCH_TOKEN`, or the dispatch failed), run it now:
 `gh workflow run Bump -R cmsd2/homebrew-tap`. Then confirm `Casks/mdview.rb` on
 `cmsd2/homebrew-tap` main has `version "X.Y.Z"` and real checksums, and the
 user can `brew upgrade --cask cmsd2/tap/mdview`.
