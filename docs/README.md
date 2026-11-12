@@ -19,6 +19,7 @@ A lightweight, read-only Markdown viewer with live file-watching.
 | [design.md](./design.md) | Architecture, components, data flow, IPC contract, security |
 | [rendering.md](./rendering.md) | How GFM / math / images / other MIME types are handled |
 | [roadmap.md](./roadmap.md) | Milestones and what ships in v1 vs later |
+| [releasing.md](./releasing.md) | Tagging a release, macOS signing secrets, the Homebrew cask |
 
 ## One-paragraph summary
 

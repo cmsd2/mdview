@@ -1,0 +1,120 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            rust-target: aarch64-apple-darwin
+            artifact-glob: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+          - os: macos-latest
+            rust-target: x86_64-apple-darwin
+            artifact-glob: src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
+          - os: ubuntu-latest
+            rust-target: x86_64-unknown-linux-gnu
+            artifact-glob: |
+              src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
+              src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/rpm/*.rpm
+              src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
+          - os: windows-latest
+            rust-target: x86_64-pc-windows-msvc
+            artifact-glob: |
+              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+
+    runs-on: ${{ matrix.os }}
+
+    # The Apple signing secrets live in the "release" environment, which has
+    # required reviewers. Only the macOS jobs use it, so Linux/Windows builds
+    # don't wait for approval.
+    environment: ${{ startsWith(matrix.os, 'macos') && 'release' || '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-target }}
+
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: ${{ matrix.rust-target }}
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            rpm
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # postinstall runs scripts/copy-vendor.mjs, which fills frontend/vendor.
+      - name: Install npm dependencies
+        run: npm ci
+
+      # The release description is this version's CHANGELOG.md section. The
+      # script exits non-zero if that section is missing, failing the build.
+      - name: Extract release notes from CHANGELOG.md
+        run: node scripts/changelog-section.mjs > release-notes.md
+
+      # Apple signing + notarization is optional: when the APPLE_* secrets are
+      # not configured the macOS build proceeds unsigned.
+      - name: Check for Apple signing secrets
+        id: apple
+        if: runner.os == 'macOS'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+        run: |
+          if [ -n "$APPLE_CERTIFICATE" ]; then
+            echo "signing=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signing=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::APPLE_CERTIFICATE secret not set; building an unsigned, un-notarized app"
+          fi
+
+      # The Tauri CLI imports the certificate into a temporary keychain, signs
+      # with the hardened runtime, and submits to notarytool + staples.
+      - name: Build Tauri app (signed + notarized)
+        if: steps.apple.outputs.signing == 'true'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npx tauri build --target ${{ matrix.rust-target }}
+
+      - name: Build Tauri app
+        if: steps.apple.outputs.signing != 'true'
+        run: npx tauri build --target ${{ matrix.rust-target }}
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact-glob }}
+          body_path: release-notes.md
+          draft: true

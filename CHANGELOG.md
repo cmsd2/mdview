@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Release builds for macOS (Apple silicon and Intel `.dmg`), Linux (`.deb`,
+  `.rpm`, `.AppImage`) and Windows (`.msi`, `.exe`), published as GitHub
+  releases. The macOS app is signed with a Developer ID and notarized, so it
+  opens without Gatekeeper warnings, and installs with
+  `brew install --cask cmsd2/tap/mdview`.
 - Live reload now also watches locally included assets: when the document
   references images or media (e.g. `![](images/diagram.png)`), edits to those
   files re-render the view too. A referenced file (or whole folder) that
