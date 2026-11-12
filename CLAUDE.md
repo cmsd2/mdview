@@ -108,4 +108,7 @@ npm run build      # release bundle (slow)
   `[Unreleased]` for user-facing changes, and the relevant `docs/` file when
   behavior or architecture changes.
 - License is **GPL-3.0-or-later** (declared in `Cargo.toml` and `package.json`).
+- Releases go through the `release` skill (`.claude/skills/release/SKILL.md`);
+  [`docs/releasing.md`](./docs/releasing.md) covers signing and the Homebrew
+  cask.
 ```

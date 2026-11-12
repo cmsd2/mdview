@@ -1,5 +1,9 @@
 # Releasing
 
+The `release` skill (`.claude/skills/release/SKILL.md`, `/release X.Y.Z` in
+Claude Code) runs these steps with pre-flight checks and sees the release
+through to the Homebrew cask.
+
 ## Cutting a release
 
 1. Bump the version in `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` and
