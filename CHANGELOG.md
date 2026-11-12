@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-12
+
 ### Added
 
 - Release builds for macOS (Apple silicon and Intel `.dmg`), Linux (`.deb`,
@@ -35,6 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   use the light theme, hide the toolbar and find bar, wrap long code lines, and
   avoid splitting code blocks, images, table rows, and display math across
   pages.
+- **File > Open…** (`Ctrl`/`Cmd`-`O`) opens another Markdown file in the same
+  window. On macOS mdview registers as a viewer for `.md`, `.markdown`,
+  `.mdown`, `.mkd` and `.mkdn` files, so it appears under Finder's Open With,
+  and a file opened from Finder or dropped on the Dock icon loads in place.
 - Drag and drop: drop a Markdown file (`.md`, `.markdown`, `.mdown`, `.mkd`,
   `.mkdn`) onto the window to open it in place of the current document. An
   overlay shows while dragging and says when the file isn't Markdown; if
@@ -92,5 +98,6 @@ file-watching.
   welcome screen is shown when launched without a file.
 - GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/cmsd2/mdview/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/cmsd2/mdview/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/cmsd2/mdview/releases/tag/v0.2.0
 [0.1.0]: https://github.com/cmsd2/mdview/releases/tag/v0.1.0

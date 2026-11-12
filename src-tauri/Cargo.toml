@@ -1,6 +1,6 @@
 [package]
 name = "mdview"
-version = "0.1.0"
+version = "0.2.0"
 description = "A lightweight, read-only Markdown viewer with live file-watching"
 edition = "2021"
 rust-version = "1.77"
