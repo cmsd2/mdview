@@ -65,6 +65,12 @@ brew install --cask cmsd2/tap/mdview
 
 The cask lives in that repository (`Casks/mdview.rb`). Its `bump.py` rewrites
 the version and both DMG checksums from the latest **published** (non-draft)
-`v*` release of `cmsd2/mdview`, and its `Bump` workflow runs that hourly or on
-demand. A draft release is invisible to it, so publishing the draft is the
-Homebrew release step.
+`v*` release of `cmsd2/mdview`. A draft release is invisible to it, so
+publishing the draft is the Homebrew release step: publishing fires this repo's
+`Notify tap` workflow (`.github/workflows/notify-tap.yml`), which sends an
+`mdview-released` dispatch that starts the tap's `Bump` workflow. The tap also
+runs `Bump` once a day, which catches a release whose dispatch failed.
+
+`Notify tap` needs a `TAP_DISPATCH_TOKEN` repository secret: a fine-grained PAT
+with access to `cmsd2/homebrew-tap` only and Contents read/write. Without it
+the workflow logs a warning and the daily run picks the release up.
